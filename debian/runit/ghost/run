@@ -1,0 +1,4 @@
+#!/bin/sh -e
+
+exec 2>&1 \
+	chpst -e /etc/service/ghost/env -u ghost:ghost node /opt/ghost/index.js

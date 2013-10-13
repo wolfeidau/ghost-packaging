@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+if [ "$1" = "configure" ]; then
+  addgroup --system --quiet ghost
+  adduser --system --quiet --ingroup ghost --no-create-home ghost
+  chown -R ghost:ghost /var/lib/ghost /var/log/ghost
+  ln -s /var/lib/ghost /opt/ghost/content/data
+fi
+
+if [ -x "/etc/service/ghost" ]; then
+	sv stop ghost || true
+	sv start ghost || true
+fi
+
