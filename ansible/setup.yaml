@@ -1,0 +1,55 @@
+- hosts: all
+  sudo: True
+  vars_files:
+    - settings-ansible.yml
+  tasks:
+    - name: ensure app apt dependencies are installed
+      action: apt pkg=$item
+      with_items:
+        - python-pycurl
+        - vim
+        - lsof
+        - tmux
+    - name: Installs wolfeidau apt key
+      action: apt_key url=http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x4C7E5BF492989294 state=present
+
+    - name: Installs wolfeidau repository
+      action: apt_repository repo='deb http://s3-us-west-2.amazonaws.com/wolfeidau-repo raring main' state=present
+
+    - name: Update apt cache
+      action: apt update_cache=yes
+
+    - name: Install fail2ban
+      action: apt pkg=fail2ban state=installed
+
+    - name: Install unattended-upgrades
+      action: apt pkg=unattended-upgrades state=present
+
+    - name: Adjust APT update intervals
+      action: copy src=templates/apt_periodic dest=/etc/apt/apt.conf.d/10periodic
+
+    - name: Install ghost
+      action: apt pkg=$item
+      with_items:
+        - ghost
+      notify: restart ghost
+
+    - name: Install nginx
+      action: apt pkg=nginx
+
+    - name: Reconfigure nginx
+      template: src=templates/nginx.conf dest=/etc/nginx/nginx.conf
+      notify:
+        - restart nginx
+
+    - name: Add nginx config for ghost
+      template: src=templates/ghost.conf dest=/etc/nginx/conf.d/ghost.conf
+      notify:
+        - restart nginx
+
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted
+
+    - name: restart ghost
+      service: name=ghost state=restarted
